@@ -1,0 +1,143 @@
+<html>
+  <head>
+    <title>Drawing Tools</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <!-- playground-hide -->
+    <script>
+      const process = { env: {} };
+      process.env.GOOGLE_MAPS_API_KEY =
+        "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg";
+    </script>
+    <!-- playground-hide-end -->
+
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <!-- 
+     The `defer` attribute causes the callback to execute after the full HTML
+     document has been parsed. For non-blocking uses, avoiding race conditions,
+     and consistent behavior across browsers, consider loading using Promises
+     with https://www.npmjs.com/package/@googlemaps/js-api-loader.
+    -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&libraries=drawing&v=weekly"
+      defer
+    ></script>
+    <script>
+        function initMap() {
+            const map = new google.maps.Map(
+            document.getElementById("map"),
+            {
+                center: { lat: -34.397, lng: 150.644 },
+                zoom: 8,
+            }
+            );
+        
+            const drawingManager = new google.maps.drawing.DrawingManager({
+            drawingMode: google.maps.drawing.OverlayType.MARKER,
+            drawingControl: true,
+            drawingControlOptions: {
+                position: google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: [
+                    google.maps.drawing.OverlayType.CIRCLE,
+                ],
+            },
+            markerOptions: {
+                icon: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+            },
+            circleOptions: {
+                fillColor: "#4c6fdf",
+                fillOpacity: 0.5,
+                strokeWeight: 2,
+                clickable: true,
+                editable: true,
+                zIndex: 0,
+            },
+            });
+        
+            drawingManager.setMap(map);
+
+            function setSelection (shape) {
+            var cont, lt, lg;
+            
+            // getting shape coordinates
+            if(shape.type == 'circle') {
+                cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br>Radius: " + shape.getRadius() + "<br>Center Lat: " + shape.getCenter().lat() + "<br>Center Lng: " + shape.getCenter().lng() + "</small>";
+                lt = shape.getCenter().lat();
+                lg = shape.getCenter().lng();
+            } else if (shape.type == 'rectangle') {
+                var bounds = shape.getBounds();
+                cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Start:</b> " + bounds.getNorthEast() + "<br><b>End:</b> " + bounds.getSouthWest() + "<br>Center Lat: " + bounds.getCenter().lat() + "<br>Center Lng: " + bounds.getCenter().lng() + "</small>";
+                lt = bounds.getCenter().lat();
+                lg = bounds.getCenter().lng();
+            }
+            else {
+                var v = shape.getPath();
+                cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Vertices: " + v.getLength() + "</b><br>Length: " + google.maps.geometry.spherical.computeLength(v).toFixed(2) + "km</small>"
+                for (var i=0; i < v.getLength(); i++) {
+                var xy = v.getAt(i);
+                lt = xy.lat();
+                lg = xy.lng();
+                }
+            }
+            
+            // infowindow.setContent("<p>" + cont + "</p><a hre='' title='Remove this " + shape.type + "' class='text-danger' onclick='deleteSelectedShape();return false;' id='del" + shape.id + "'><i class='fas fa-trash-alt'></i> Remove this shape</a>");
+            // infowindow.setPosition({lat:lt, lng:lg});
+            // infowindow.open(map);
+
+            alert(`lat: ${lt}, lng: ${lg}, radius: ${shape.getRadius()}`)
+            
+            shape.setEditable(true);
+        }
+        
+        google.maps.event.addListener(drawingManager, 'overlaycomplete', function(e) {
+		if (e.type !== google.maps.drawing.OverlayType.MARKER) {
+			// Switch back to non-drawing mode after drawing a shape.
+			drawingManager.setDrawingMode(null);
+			// Add an event listener that selects the newly-drawn shape when the user mouses down on it.
+			var newShape = e.overlay;
+			newShape.type = e.type;
+			newShape.id=new Date().getTime()+'_'+Math.floor(Math.random()*1000);
+			
+			google.maps.event.addListener(newShape, 'click', function (e) {
+				if (e.vertex !== undefined) {
+					if (newShape.type === google.maps.drawing.OverlayType.POLYGON) {
+						var path = newShape.getPaths().getAt(e.path);
+						path.removeAt(e.vertex);
+						if (path.length < 3) {newShape.setMap(null);}
+					}
+					if (newShape.type === google.maps.drawing.OverlayType.POLYLINE) {
+						var path = newShape.getPath();
+						path.removeAt(e.vertex);
+						if (path.length < 2) {newShape.setMap(null);}
+					}
+				}
+				setSelection(newShape);
+			});
+			setSelection(newShape);
+		} 
+	});
+    
+        }
+    </script>
+
+    <style>
+        #map {
+            height: 100%;
+        }
+        
+        /* 
+        * Optional: Makes the sample page fill the window. 
+        */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        
+    </style>
+  </body>
+</html>
