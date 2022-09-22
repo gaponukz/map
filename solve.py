@@ -1,6 +1,8 @@
 from utils import *
 
-point1 = Point(53.32055555555556, -1.7297222222222221)
-point2 = Point(53.31861111111111, -1.6997222222222223)
+circle = Circle(1052.0418381213346 / 1000, (50.40444089177163, 30.62135376141017))
+new_circle1 = circle.build_neighboring_circle_on_angel(90)
+new_circle2 = circle.build_neighboring_circle_on_angel(180)
 
-print(point1.distance_to(point2), "K.M")
+print(new_circle1.center.lat, new_circle1.center.lng)
+print(new_circle2.center.lat, new_circle2.center.lng)

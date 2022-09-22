@@ -45,7 +45,7 @@ class Circle(object):
     def build_neighboring_circle_on_angel(self, angel: float) -> 'Circle':
         # return Circle that touches a 'self circle' at an angel
         # NOTE: distance between centers - diameter of 'self circle'
-        center_point = geopy.distance.distance(miles=to_miles(self.radius * 2)).destination((self.latitude, self.longitude), bearing=angel)
+        center_point = geopy.distance.distance(miles=to_miles(self.radius * 2)).destination((self.center.lat, self.center.lng), bearing=angel)
 
         return Circle(self.radius, (center_point.latitude, center_point.longitude))
 

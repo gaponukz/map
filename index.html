@@ -86,7 +86,14 @@
             // infowindow.setPosition({lat:lt, lng:lg});
             // infowindow.open(map);
 
-            alert(`lat: ${lt}, lng: ${lg}, radius: ${shape.getRadius()}`)
+            console.log(`lat: ${lt}, lng: ${lg}, radius: ${shape.getRadius()}`)
+            const shape_0 = new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40444089177163 , lng: 30.62135376141017},radius: 1052.0418381213346});
+            const shape_1 = new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40443712725817, lng: 30.650950182744158},radius: 1052.0418381213346});
+            const shape_2 = new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.38552551328879, lng: 30.62135376141017},radius: 1052.0418381213346});
+            
+            shape_0.setMap(map);
+            shape_1.setMap(map);
+            shape_2.setMap(map);
             
             shape.setEditable(true);
         }
