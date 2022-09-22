@@ -36,6 +36,10 @@ class Circle(object):
         between_centers = self.center.distance_to(circle.center)
 
         return between_centers + circle.radius <= self.radius
+    
+    def build_neighboring_circle_on_angel(self, center: float, radius: float):
+        # TODO
+        pass
 
     def __str__(self):
         return f"{self.__class__.__name__}(radius={round(self.radius, 3)})"
