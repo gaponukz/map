@@ -9,3 +9,6 @@ Problem: It is necessary to arrange n (unknown) small circles of radius r withou
 
 # solition one
 ![circle_solution](https://user-images.githubusercontent.com/49754258/191626941-399f4c50-6012-4378-a551-377628bf603f.png)
+
+problem: build line with "e" angle (https://www.google.com/search?q=python+build+line+with+angle+longtitute+lantitude)
+![build_circle](https://user-images.githubusercontent.com/49754258/191728222-f44b7643-756d-44a4-a84d-d59d2bf0aee7.png)
