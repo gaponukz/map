@@ -1,4 +1,5 @@
 import math
+import geopy.distance
 
 class Point(object):
     def __init__(self, lat: float, lng: float):
@@ -26,20 +27,33 @@ class Circle(object):
         self.radius = radius
         self.center = center if isinstance(center, Point) else Point(*center)
     
-    def has_intersections_with(self, circle: 'Circle'):
+    def has_intersections_with(self, circle: 'Circle') -> bool:
+        # check if 'self circle' has intersections with 'argument circle'
+
         max_dist = self.radius + circle.radius
         actual_dist = self.center.distance_to(circle.center)
 
         return actual_dist <= max_dist
 
-    def has_inside(self, circle: 'Circle'):
+    def has_inside(self, circle: 'Circle') -> bool:
+        # check if 'argument circle' inside the 'self circle'
+
         between_centers = self.center.distance_to(circle.center)
 
         return between_centers + circle.radius <= self.radius
     
-    def build_neighboring_circle_on_angel(self, angel: float):
-        # TODO
-        pass
+    def build_neighboring_circle_on_angel(self, angel: float) -> 'Circle':
+        # return Circle that touches a 'self circle' at an angel
+        # NOTE: distance between centers - diameter of 'self circle'
+        center_point = geopy.distance.distance(miles=to_miles(self.radius * 2)).destination((self.latitude, self.longitude), bearing=angel)
+
+        return Circle(self.radius, (center_point.latitude, center_point.longitude))
 
     def __str__(self):
         return f"{self.__class__.__name__}(radius={round(self.radius, 3)})"
+
+def to_kilometers(miles: float) -> float:
+    return miles / 0.62137119
+
+def to_miles(kilometers: float) -> float:
+    return kilometers * 0.62137119
