@@ -20,10 +20,11 @@ for circle in circles:
     for angel in range(0, 360, E):
         new_circle = circle.build_neighboring_circle_on_angel(angel)
 
-        if main_circle.has_inside(new_circle) and all([not _circle.has_intersections_with(new_circle) for _circle in circles if new_circle != _circle]):
-            circles.append(new_circle)
-            print(angel)
-            print(new_circle.center.lat, new_circle.center.lng)
+        if main_circle.has_inside(new_circle):
+            if all([not _circle.has_intersections_with(new_circle) for _circle in circles if new_circle != _circle]):
+                circles.append(new_circle)
     
     print(len(circles))
-    break
+
+    if circle == circles[-1]:
+        break

@@ -37,7 +37,7 @@ class Circle(object):
         max_dist = self.radius + circle.radius
         actual_dist = self.center.distance_to(circle.center) * 1000
 
-        return actual_dist >= max_dist
+        return actual_dist + 2 <= max_dist
 
     def has_inside(self, circle: 'Circle') -> bool:
         # check if 'argument circle' inside the 'self circle'
