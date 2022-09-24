@@ -24,183 +24,199 @@
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&libraries=drawing&v=weekly"
       defer
     ></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
     <script>
-        function initMap() {
-            const map = new google.maps.Map(
-            document.getElementById("map"),
-            {
-                center: { lat: 50.40444089177163, lng: 30.62135376141017},
-                zoom: 8,
+
+            var dl_lat, map, drawingManager, dl_lon, selectedShape, selectedColor;
+            var polyOptions = {};
+            var shapeCollection = [];
+            var infowindow
+            var dl_lat = 41.933495;
+            var dl_lon = 12.579144;
+
+            $('#line_color').val("#0062cc");
+            $('#fill_color').val("#133c55");
+            $('#l_color').val("#0062cc");
+            $('#f_color').val("#133c55");
+            $('#line_opacity').val("0.5");
+            $('#opacity').val("0.5");
+            $('#stroke').val("5");
+
+            function clearSelection () {
+                if (selectedShape) {
+                    selectedShape.setEditable(false);
+                    selectedShape = null;
+                }
             }
-            );
-        
-            const drawingManager = new google.maps.drawing.DrawingManager({
-            drawingMode: google.maps.drawing.OverlayType.MARKER,
-            drawingControl: true,
-            drawingControlOptions: {
-                position: google.maps.ControlPosition.TOP_CENTER,
-                drawingModes: [
-                    google.maps.drawing.OverlayType.CIRCLE,
-                ],
-            },
-            markerOptions: {
-                icon: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-            },
-            circleOptions: {
-                fillColor: "#4c6fdf",
-                fillOpacity: 0.5,
-                strokeWeight: 2,
-                clickable: true,
-                editable: true,
-                zIndex: 0,
-            },
-            });
-        
-            drawingManager.setMap(map);
 
             function setSelection (shape) {
-            var cont, lt, lg;
-            
-            // getting shape coordinates
-            if(shape.type == 'circle') {
-                cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br>Radius: " + shape.getRadius() + "<br>Center Lat: " + shape.getCenter().lat() + "<br>Center Lng: " + shape.getCenter().lng() + "</small>";
-                lt = shape.getCenter().lat();
-                lg = shape.getCenter().lng();
-            } else if (shape.type == 'rectangle') {
-                var bounds = shape.getBounds();
-                cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Start:</b> " + bounds.getNorthEast() + "<br><b>End:</b> " + bounds.getSouthWest() + "<br>Center Lat: " + bounds.getCenter().lat() + "<br>Center Lng: " + bounds.getCenter().lng() + "</small>";
-                lt = bounds.getCenter().lat();
-                lg = bounds.getCenter().lng();
+                var cont, lt, lg;
+                
+                clearSelection();
+                // getting shape coordinates
+                if(shape.type == 'circle') {
+                    cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br>Radius: " + shape.getRadius() + "<br>Center Lat: " + shape.getCenter().lat() + "<br>Center Lng: " + shape.getCenter().lng() + "</small>";
+                    lt = shape.getCenter().lat();
+                    lg = shape.getCenter().lng();
+                } else if (shape.type == 'rectangle') {
+                    var bounds = shape.getBounds();
+                    cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Start:</b> " + bounds.getNorthEast() + "<br><b>End:</b> " + bounds.getSouthWest() + "<br>Center Lat: " + bounds.getCenter().lat() + "<br>Center Lng: " + bounds.getCenter().lng() + "</small>";
+                    lt = bounds.getCenter().lat();
+                    lg = bounds.getCenter().lng();
+                }
+                else {
+                    var v = shape.getPath();
+                    cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Vertices: " + v.getLength() + "</b><br>Length: " + google.maps.geometry.spherical.computeLength(v).toFixed(2) + "km</small>"
+                    for (var i=0; i < v.getLength(); i++) {
+                    var xy = v.getAt(i);
+                    lt = xy.lat();
+                    lg = xy.lng();
+                    }
+                }
+                
+                infowindow.setContent("<p>" + cont + "</p><a hre='' title='Remove this " + shape.type + "' class='text-danger' onclick='deleteSelectedShape();return false;' id='del" + shape.id + "'><i class='fas fa-trash-alt'></i> Remove this shape</a>");
+                infowindow.setPosition({lat:lt, lng:lg});
+                infowindow.open(map);
+                
+                selectedShape = shape;
+                shape.setEditable(true);
+                
+                var insert = true;
+                for(var i = 0; i < shapeCollection.length; i++){if(shapeCollection[i].id === selectedShape.id) {insert = false}};
+                if(insert) {shapeCollection.push(selectedShape);}
+                
+                selectStyle();
             }
-            else {
-                var v = shape.getPath();
-                cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Vertices: " + v.getLength() + "</b><br>Length: " + google.maps.geometry.spherical.computeLength(v).toFixed(2) + "km</small>"
-                for (var i=0; i < v.getLength(); i++) {
-                var xy = v.getAt(i);
-                lt = xy.lat();
-                lg = xy.lng();
+
+            function deleteSelectedShape () {
+                if (selectedShape) {
+                    for(var i = 0; i < shapeCollection.length; i++){ 
+                        if (shapeCollection[i].id === selectedShape.id) { 
+                            console.log("delete " + selectedShape.id);
+                            shapeCollection.splice(i, 1); 
+                        }
+                    };
+                    selectedShape.setMap(null);		
+                    infowindow.close();
+                }
+            }
+
+            function selectStyle(){
+                if (selectedShape) {
+                    selectedShape.set('fillColor', $('#f_color').val());
+                    selectedShape.set('fillOpacity', $("#opacity").val());
+                    selectedShape.set('strokeColor', $('#l_color').val());
+                    selectedShape.set('strokeOpacity', $("#line_opacity").val());
+                    selectedShape.set('strokeWeight', $("#stroke").val());
+                }
+            }
+
+            function setSelectedStyle () {
+                if (selectedShape) {
+                    var newOptions = {
+                        fillColor: $('#f_color').val(),
+                        fillOpacity : $("#opacity").val(),
+                        strokeColor : $('#l_color').val(),
+                        strokeOpacity : $("#line_opacity").val(),
+                        strokeWeight : $("#stroke").val(),
+                        clickable:true, editable:true, draggable:true, zIndex:1
+                    };	
+                    if (selectedShape.type !== google.maps.drawing.OverlayType.MARKER) {
+                        selectedShape.set('fillColor', $('#f_color').val());
+                        selectedShape.set('fillOpacity', $("#opacity").val());
+                        selectedShape.set('strokeColor', $('#l_color').val());
+                        selectedShape.set('strokeOpacity', $("#line_opacity").val());
+                        selectedShape.set('strokeWeight', $("#stroke").val());
+                    }
+                }
+            }
+            //build map preview
+
+            function deleteSelectedShape () {
+                if (selectedShape) {
+                    for(var i = 0; i < shapeCollection.length; i++){ 
+                        if (shapeCollection[i].id === selectedShape.id) { 
+                            console.log("delete " + selectedShape.id);
+                            shapeCollection.splice(i, 1); 
+                        }
+                    };
+                    selectedShape.setMap(null);		
+                    infowindow.close();
                 }
             }
             
-            // infowindow.setContent("<p>" + cont + "</p><a hre='' title='Remove this " + shape.type + "' class='text-danger' onclick='deleteSelectedShape();return false;' id='del" + shape.id + "'><i class='fas fa-trash-alt'></i> Remove this shape</a>");
-            // infowindow.setPosition({lat:lt, lng:lg});
-            // infowindow.open(map);
+            function initMap() {
+                map = new google.maps.Map(
+                document.getElementById("map"),
+                {
+                    center: { lat: 50.40444089177163, lng: 30.62135376141017},
+                    zoom: 8,
+                }
+                );
 
-            console.log(`lat: ${lt}, lng: ${lg}, radius: ${shape.getRadius()}`)
-            const shape_0 = new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40444089177163 , lng: 30.62135376141017},radius: 1000});
-            const shape_1 = new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41253173012335, lng: 30.62135376141017},radius: 100});
+                infowindow = new google.maps.InfoWindow({size: new google.maps.Size(250, 100)});
             
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41253173012335, lng: 30.62135376141017},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.412312580053666, lng: 30.624146490903566},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.410876691189486, lng: 30.6224531292985},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41109580066863, lng: 30.61966047640099},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41172719014879, lng: 30.62680686601237},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41029130114089, lng: 30.62511342400489},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.4091117599969, lng: 30.622989972858836},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40933086954287, lng: 30.620197322437008},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40991621113589, lng: 30.61753705534694},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41168112980647, lng: 30.617000103871426},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41077439033535, lng: 30.629192943725226},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40933850109226, lng: 30.627499429607646},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.408158959755056, lng: 30.625375919229615},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.407314891063656, lng: 30.622891786389587},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.407534000677686, lng: 30.620099135514995},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40811934245249, lng: 30.617438867215363},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40907209175648, lng: 30.61505287302204},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.41083701068287, lng: 30.61451582926561},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40952540229448, lng: 30.63121683311678},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.408089512742315, lng: 30.629523257837562},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40690997115123, lng: 30.62739969722076},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40606590227816, lng: 30.62491552843239},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40557033159566, lng: 30.62221118675495},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40578944127573, lng: 30.619418532742134},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40637478322699, lng: 30.616758256058684},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40732753281818, lng: 30.614372248218597},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.408576474287656, lng: 30.612348381356163},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40800063280131, lng: 30.63270773291104},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.406564742871254, lng: 30.631014112579493},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40538520096971, lng: 30.628890514956257},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40454113187448, lng: 30.626406319687945},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40404556106156, lng: 30.62370196246416},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.4039828150264, lng: 30.62089046504298},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40420192476653, lng: 30.6180978049407},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.404787266878245, lng: 30.615437511989146},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.4057400167306, lng: 30.613051477668645},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40698895854242, lng: 30.61102757609136},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.406160256513964, lng: 30.633755344998686},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.404845337538205, lng: 30.63183663027295},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40366579528625, lng: 30.62971301223418},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40282172594028, lng: 30.627228802357546},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40232615498013, lng: 30.62452443655723},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40226340892633, lng: 30.621712938050162},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40248251873157, lng: 30.61892028173983},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40288696014003, lng: 30.616179245131942},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40347230238444, lng: 30.613518928549585},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40442505245279, lng: 30.611132855763998},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.405673994547755, lng: 30.609108903760422},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.403689607704166, lng: 30.63399166023959},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40251006521743, lng: 30.63186798871348},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40166599570345, lng: 30.629383740564005},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40105107394648, lng: 30.62674032384398},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.400555502834685, lng: 30.624035963137008},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.4004927567617, lng: 30.621224465274818},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.400711866633976, lng: 30.618431806712557},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.4011163081662, lng: 30.615690765947903},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40170165058973, lng: 30.613030443349352},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.402654400949615, lng: 30.61064436077089},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.400781746591235, lng: 30.632643362026776},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39993767682518, lng: 30.63015910010736},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39932275488458, lng: 30.627515673356058},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39882718362478, lng: 30.624811304565046},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39876443753306, lng: 30.62199980567932},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.398983547470785, lng: 30.619207150691267},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39938798912379, lng: 30.616466116524133},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.399822942842746, lng: 30.613736717683253},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.40040828539677, lng: 30.6110763710194},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39755210182009, lng: 30.628004115911207},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39705653040865, lng: 30.625299742027856},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.39699378429773, lng: 30.62248824249738},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.3972128943025, lng: 30.61969558976081},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.397617336079264, lng: 30.616954559749615},radius: 100}).setMap(map)
-            new google.maps.Circle({strokeColor:'#0062cc',strokeOpacity:0.5,strokeWeight:1,fillColor:'#133c55',fillOpacity:0.5,center:{lat:50.398052289931314, lng: 30.614225165378322},radius: 100}).setMap(map)
-
-
-            shape_0.setMap(map);
-            shape_1.setMap(map);
-
+                drawingManager = new google.maps.drawing.DrawingManager({
+                drawingMode: google.maps.drawing.OverlayType.MARKER,
+                drawingControl: true,
+                drawingControlOptions: {
+                    position: google.maps.ControlPosition.TOP_CENTER,
+                    drawingModes: [
+                        google.maps.drawing.OverlayType.CIRCLE,
+                    ],
+                },
+                markerOptions: {
+                    icon: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+                },
+                circleOptions: {
+                    fillColor: "#4c6fdf",
+                    fillOpacity: 0.5,
+                    strokeWeight: 2,
+                    clickable: true,
+                    editable: true,
+                    zIndex: 0,
+                },
+                });
             
-            shape.setEditable(true);
-        }
-        
-        google.maps.event.addListener(drawingManager, 'overlaycomplete', function(e) {
-		if (e.type !== google.maps.drawing.OverlayType.MARKER) {
-			// Switch back to non-drawing mode after drawing a shape.
-			drawingManager.setDrawingMode(null);
-			// Add an event listener that selects the newly-drawn shape when the user mouses down on it.
-			var newShape = e.overlay;
-			newShape.type = e.type;
-			newShape.id=new Date().getTime()+'_'+Math.floor(Math.random()*1000);
-			
-			google.maps.event.addListener(newShape, 'click', function (e) {
-				if (e.vertex !== undefined) {
-					if (newShape.type === google.maps.drawing.OverlayType.POLYGON) {
-						var path = newShape.getPaths().getAt(e.path);
-						path.removeAt(e.vertex);
-						if (path.length < 3) {newShape.setMap(null);}
-					}
-					if (newShape.type === google.maps.drawing.OverlayType.POLYLINE) {
-						var path = newShape.getPath();
-						path.removeAt(e.vertex);
-						if (path.length < 2) {newShape.setMap(null);}
-					}
-				}
-				setSelection(newShape);
-			});
-			setSelection(newShape);
-		} 
-	});
-    
-        }
+                drawingManager.setMap(map);
+
+                
+            google.maps.event.addListener(drawingManager, 'overlaycomplete', function(e) {
+                if (e.type !== google.maps.drawing.OverlayType.MARKER) {
+                    // Switch back to non-drawing mode after drawing a shape.
+                    drawingManager.setDrawingMode(null);
+                    // Add an event listener that selects the newly-drawn shape when the user mouses down on it.
+                    var newShape = e.overlay;
+                    newShape.type = e.type;
+                    newShape.id=new Date().getTime()+'_'+Math.floor(Math.random()*1000);
+                    shapeCollection[newShape.id]=newShape;
+                    
+                    google.maps.event.addListener(newShape, 'click', function (e) {
+                        if (e.vertex !== undefined) {
+                            if (newShape.type === google.maps.drawing.OverlayType.POLYGON) {
+                                var path = newShape.getPaths().getAt(e.path);
+                                path.removeAt(e.vertex);
+                                if (path.length < 3) {newShape.setMap(null);}
+                            }
+                            if (newShape.type === google.maps.drawing.OverlayType.POLYLINE) {
+                                var path = newShape.getPath();
+                                path.removeAt(e.vertex);
+                                if (path.length < 2) {newShape.setMap(null);}
+                            }
+                        }
+                        setSelection(newShape);
+                    });
+                    setSelection(newShape);
+                } 
+                console.log(shapeCollection);
+            });
+            // Clear the current selection when the drawing mode is changed, or when the map is clicked.
+            google.maps.event.addListener(drawingManager, 'drawingmode_changed', clearSelection);
+            google.maps.event.addListener(map, 'click', function() {clearSelection;infowindow.close();});
+            //google.maps.event.addDomListener(document.getElementById('delete-button'), 'click', deleteSelectedShape);
+
+            }
+
     </script>
 
     <style>

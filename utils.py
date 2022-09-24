@@ -62,8 +62,5 @@ class Circle(object):
     def __str__(self):
         return f"{self.__class__.__name__}(radius={round(self.radius, 3)})"
 
-def to_kilometers(miles: float) -> float:
-    return miles / 0.62137119
-
 def to_miles(kilometers: float) -> float:
     return kilometers * 0.62137119
