@@ -1,240 +1,153 @@
 <html>
   <head>
-    <title>Drawing Tools</title>
+    <title>Geoparser</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-    <!-- playground-hide -->
-    <script>
-      const process = { env: {} };
-      process.env.GOOGLE_MAPS_API_KEY =
-        "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg";
-    </script>
-    <!-- playground-hide-end -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
   </head>
   <body>
     <div id="map"></div>
 
-    <!-- 
-     The `defer` attribute causes the callback to execute after the full HTML
-     document has been parsed. For non-blocking uses, avoiding race conditions,
-     and consistent behavior across browsers, consider loading using Promises
-     with https://www.npmjs.com/package/@googlemaps/js-api-loader.
-    -->
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&libraries=drawing&v=weekly"
-      defer
-    ></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&libraries=drawing&v=weekly" defer></script>
     <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
-    <script>
 
-            var dl_lat, map, drawingManager, dl_lon, selectedShape, selectedColor;
-            var polyOptions = {};
-            var shapeCollection = [];
-            var infowindow
-            var dl_lat = 41.933495;
-            var dl_lon = 12.579144;
+<script>
+    let map
+    let drawingManager
+    let selectedShape
+    let infowindow
+    let shapeCollection = []
 
-            $('#line_color').val("#0062cc");
-            $('#fill_color').val("#133c55");
-            $('#l_color').val("#0062cc");
-            $('#f_color').val("#133c55");
-            $('#line_opacity').val("0.5");
-            $('#opacity').val("0.5");
-            $('#stroke').val("5");
+    const clearSelection = () => {
+        if (selectedShape) {
+            selectedShape.setEditable(false)
+            selectedShape = null
+        }
+    }
 
-            function clearSelection () {
-                if (selectedShape) {
-                    selectedShape.setEditable(false);
-                    selectedShape = null;
-                }
-            }
-
-            function setSelection (shape) {
-                var cont, lt, lg;
-                
-                clearSelection();
-                // getting shape coordinates
-                if(shape.type == 'circle') {
-                    cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br>Radius: " + shape.getRadius() + "<br>Center Lat: " + shape.getCenter().lat() + "<br>Center Lng: " + shape.getCenter().lng() + "</small>";
-                    lt = shape.getCenter().lat();
-                    lg = shape.getCenter().lng();
-                } else if (shape.type == 'rectangle') {
-                    var bounds = shape.getBounds();
-                    cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Start:</b> " + bounds.getNorthEast() + "<br><b>End:</b> " + bounds.getSouthWest() + "<br>Center Lat: " + bounds.getCenter().lat() + "<br>Center Lng: " + bounds.getCenter().lng() + "</small>";
-                    lt = bounds.getCenter().lat();
-                    lg = bounds.getCenter().lng();
-                }
-                else {
-                    var v = shape.getPath();
-                    cont = "Shape Type: <b>" + shape.type.toUpperCase() + "</b><br><small>Shape ID: " + shape.id + "<br><b>Vertices: " + v.getLength() + "</b><br>Length: " + google.maps.geometry.spherical.computeLength(v).toFixed(2) + "km</small>"
-                    for (var i=0; i < v.getLength(); i++) {
-                    var xy = v.getAt(i);
-                    lt = xy.lat();
-                    lg = xy.lng();
-                    }
-                }
-                
-                infowindow.setContent("<p>" + cont + "</p><a hre='' title='Remove this " + shape.type + "' class='text-danger' onclick='deleteSelectedShape();return false;' id='del" + shape.id + "'><i class='fas fa-trash-alt'></i> Remove this shape</a>");
-                infowindow.setPosition({lat:lt, lng:lg});
-                infowindow.open(map);
-                
-                selectedShape = shape;
-                shape.setEditable(true);
-                
-                var insert = true;
-                for(var i = 0; i < shapeCollection.length; i++){if(shapeCollection[i].id === selectedShape.id) {insert = false}};
-                if(insert) {shapeCollection.push(selectedShape);}
-                
-                selectStyle();
-            }
-
-            function deleteSelectedShape () {
-                if (selectedShape) {
-                    for(var i = 0; i < shapeCollection.length; i++){ 
-                        if (shapeCollection[i].id === selectedShape.id) { 
-                            console.log("delete " + selectedShape.id);
-                            shapeCollection.splice(i, 1); 
-                        }
-                    };
-                    selectedShape.setMap(null);		
-                    infowindow.close();
-                }
-            }
-
-            function selectStyle(){
-                if (selectedShape) {
-                    selectedShape.set('fillColor', $('#f_color').val());
-                    selectedShape.set('fillOpacity', $("#opacity").val());
-                    selectedShape.set('strokeColor', $('#l_color').val());
-                    selectedShape.set('strokeOpacity', $("#line_opacity").val());
-                    selectedShape.set('strokeWeight', $("#stroke").val());
-                }
-            }
-
-            function setSelectedStyle () {
-                if (selectedShape) {
-                    var newOptions = {
-                        fillColor: $('#f_color').val(),
-                        fillOpacity : $("#opacity").val(),
-                        strokeColor : $('#l_color').val(),
-                        strokeOpacity : $("#line_opacity").val(),
-                        strokeWeight : $("#stroke").val(),
-                        clickable:true, editable:true, draggable:true, zIndex:1
-                    };	
-                    if (selectedShape.type !== google.maps.drawing.OverlayType.MARKER) {
-                        selectedShape.set('fillColor', $('#f_color').val());
-                        selectedShape.set('fillOpacity', $("#opacity").val());
-                        selectedShape.set('strokeColor', $('#l_color').val());
-                        selectedShape.set('strokeOpacity', $("#line_opacity").val());
-                        selectedShape.set('strokeWeight', $("#stroke").val());
-                    }
-                }
-            }
-            //build map preview
-
-            function deleteSelectedShape () {
-                if (selectedShape) {
-                    for(var i = 0; i < shapeCollection.length; i++){ 
-                        if (shapeCollection[i].id === selectedShape.id) { 
-                            console.log("delete " + selectedShape.id);
-                            shapeCollection.splice(i, 1); 
-                        }
-                    };
-                    selectedShape.setMap(null);		
-                    infowindow.close();
-                }
-            }
-            
-            function initMap() {
-                map = new google.maps.Map(
-                document.getElementById("map"),
-                {
-                    center: { lat: 50.40444089177163, lng: 30.62135376141017},
-                    zoom: 8,
-                }
-                );
-
-                infowindow = new google.maps.InfoWindow({size: new google.maps.Size(250, 100)});
-            
-                drawingManager = new google.maps.drawing.DrawingManager({
-                drawingMode: google.maps.drawing.OverlayType.MARKER,
-                drawingControl: true,
-                drawingControlOptions: {
-                    position: google.maps.ControlPosition.TOP_CENTER,
-                    drawingModes: [
-                        google.maps.drawing.OverlayType.CIRCLE,
-                    ],
-                },
-                markerOptions: {
-                    icon: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
-                },
-                circleOptions: {
-                    fillColor: "#4c6fdf",
-                    fillOpacity: 0.5,
-                    strokeWeight: 2,
-                    clickable: true,
-                    editable: true,
-                    zIndex: 0,
-                },
-                });
-            
-                drawingManager.setMap(map);
-
-                
-            google.maps.event.addListener(drawingManager, 'overlaycomplete', function(e) {
-                if (e.type !== google.maps.drawing.OverlayType.MARKER) {
-                    // Switch back to non-drawing mode after drawing a shape.
-                    drawingManager.setDrawingMode(null);
-                    // Add an event listener that selects the newly-drawn shape when the user mouses down on it.
-                    var newShape = e.overlay;
-                    newShape.type = e.type;
-                    newShape.id=new Date().getTime()+'_'+Math.floor(Math.random()*1000);
-                    shapeCollection[newShape.id]=newShape;
-                    
-                    google.maps.event.addListener(newShape, 'click', function (e) {
-                        if (e.vertex !== undefined) {
-                            if (newShape.type === google.maps.drawing.OverlayType.POLYGON) {
-                                var path = newShape.getPaths().getAt(e.path);
-                                path.removeAt(e.vertex);
-                                if (path.length < 3) {newShape.setMap(null);}
-                            }
-                            if (newShape.type === google.maps.drawing.OverlayType.POLYLINE) {
-                                var path = newShape.getPath();
-                                path.removeAt(e.vertex);
-                                if (path.length < 2) {newShape.setMap(null);}
-                            }
-                        }
-                        setSelection(newShape);
-                    });
-                    setSelection(newShape);
-                } 
-                console.log(shapeCollection);
-            });
-            // Clear the current selection when the drawing mode is changed, or when the map is clicked.
-            google.maps.event.addListener(drawingManager, 'drawingmode_changed', clearSelection);
-            google.maps.event.addListener(map, 'click', function() {clearSelection;infowindow.close();});
-            //google.maps.event.addDomListener(document.getElementById('delete-button'), 'click', deleteSelectedShape);
-
-            }
-
-    </script>
-
-    <style>
-        #map {
-            height: 100%;
+    const setSelection = shape =>  {
+        let content = `<p style="margin-top: 0px;">Geoparsing data<br><small>Radius: ${Number(shape.getRadius() / 1000).toFixed(2)}km</small></p>`
+        let lat = shape.getCenter().lat()
+        let lng = shape.getCenter().lng()
+        
+        clearSelection()
+        
+        infowindow.setContent(`${content}<a hre='' style='text-decoration: none;' class='text-danger' onclick='deleteSelectedShape()' id='del" + shape.id + "'><svg style='width: 11px' class="svg-inline--fa fa-trash-alt fa-w-14" aria-hidden="true" data-prefix="fas" data-icon="trash-alt" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" data-fa-i2svg=""><path fill="currentColor" d="M0 84V56c0-13.3 10.7-24 24-24h112l9.4-18.7c4-8.2 12.3-13.3 21.4-13.3h114.3c9.1 0 17.4 5.1 21.5 13.3L312 32h112c13.3 0 24 10.7 24 24v28c0 6.6-5.4 12-12 12H12C5.4 96 0 90.6 0 84zm416 56v324c0 26.5-21.5 48-48 48H80c-26.5 0-48-21.5-48-48V140c0-6.6 5.4-12 12-12h360c6.6 0 12 5.4 12 12zm-272 68c0-8.8-7.2-16-16-16s-16 7.2-16 16v224c0 8.8 7.2 16 16 16s16-7.2 16-16V208zm96 0c0-8.8-7.2-16-16-16s-16 7.2-16 16v224c0 8.8 7.2 16 16 16s16-7.2 16-16V208zm96 0c0-8.8-7.2-16-16-16s-16 7.2-16 16v224c0 8.8 7.2 16 16 16s16-7.2 16-16V208z"></path></svg> Remove this shape</a>`)
+        infowindow.setPosition({lat: lat, lng: lng})
+        infowindow.open(map)
+        
+        selectedShape = shape
+        shape.setEditable(true)
+        
+        if (shapeCollection.every(item => item.id != shape.id)) {
+            shapeCollection.push(shape)
         }
         
-        /* 
-        * Optional: Makes the sample page fill the window. 
-        */
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
+        selectStyle()
+    }
+
+    const deleteSelectedShape =  () => {
+        infowindow.close()
+
+        for(let i = 0; i < shapeCollection.length; i++){ 
+            shapeCollection[i].setMap(null)
         }
-        
-        
-    </style>
+
+        shapeCollection = []
+    }
+
+    const selectStyle = () => {
+        if (selectedShape) {
+            selectedShape.set('fillColor', $('#f_color').val())
+            selectedShape.set('fillOpacity', $("#opacity").val())
+            selectedShape.set('strokeColor', $('#l_color').val())
+            selectedShape.set('strokeOpacity', $("#line_opacity").val())
+            selectedShape.set('strokeWeight', $("#stroke").val())
+        }
+    }
+
+    function initMap () {
+        // Main
+
+        map = new google.maps.Map(document.getElementById("map"), { center: { lat: 50.40444089177163, lng: 30.62135376141017}, zoom: 8})
+        infowindow = new google.maps.InfoWindow({size: new google.maps.Size(250, 100)})
+    
+        drawingManager = new google.maps.drawing.DrawingManager({
+            drawingMode: google.maps.drawing.OverlayType.MARKER,
+            drawingControl: true,
+            drawingControlOptions: {
+                position: google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: [
+                    google.maps.drawing.OverlayType.CIRCLE
+                ],
+            },
+            circleOptions: {
+                fillColor: "#4c6fdf",
+                fillOpacity: 0.5,
+                strokeWeight: 2,
+                clickable: true,
+                editable: true,
+                zIndex: 0,
+            }
+        })
+    
+        drawingManager.setMap(map)
+
+        google.maps.event.addListener(drawingManager, 'overlaycomplete', event => {
+            if (event.type !== google.maps.drawing.OverlayType.MARKER) {
+                deleteSelectedShape()
+                drawingManager.setDrawingMode(null)
+
+                let newShape = event.overlay
+
+                newShape.type = event.type;
+                newShape.id = new Date().getTime() + '_' + Math.floor(Math.random() * 1000)
+                shapeCollection[newShape.id] = newShape
+                
+                google.maps.event.addListener(newShape, 'click', event => {
+                    if (event.vertex) {
+                        if (newShape.type === google.maps.drawing.OverlayType.POLYGON) {
+                            let path = newShape.getPaths().getAt(event.path)
+
+                            path.removeAt(event.vertex)
+                            if (path.length < 3) newShape.setMap(null)
+                        }
+                        if (newShape.type === google.maps.drawing.OverlayType.POLYLINE) {
+                            let path = newShape.getPath()
+
+                            path.removeAt(event.vertex)
+                            if (path.length < 2) newShape.setMap(null)
+                        }
+                    }
+                    setSelection(newShape)
+                })
+                setSelection(newShape)
+            }
+        })
+
+        google.maps.event.addListener(drawingManager, 'drawingmode_changed', clearSelection)
+        google.maps.event.addListener(map, 'click', () => {clearSelection; infowindow.close()})
+    }
+
+</script>
+
+<style>
+    #map {
+        height: 100%;
+    }
+    
+    /* 
+    * Optional: Makes the sample page fill the window. 
+    */
+    html,
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    
+    
+</style>
+
   </body>
 </html>
