@@ -1,4 +1,5 @@
 import json
+import time
 from utils import *
 
 E = 1 # constant of angle
@@ -9,6 +10,8 @@ with open("setting.json", 'r', encoding='utf-8') as out:
 little_radius: float = setting['little_radius']
 big_radius: float = setting['big_radius']
 lat, lng = setting['center']
+
+start_time = time.time()
 
 main_circle = Circle(big_radius, (lat, lng))
 
@@ -28,3 +31,5 @@ for circle in circles:
 
     if circle == circles[-1]:
         break
+
+print(time.time() - start_time)
