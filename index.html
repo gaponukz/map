@@ -75,7 +75,6 @@
         infowindow = new google.maps.InfoWindow({size: new google.maps.Size(250, 100)})
     
         drawingManager = new google.maps.drawing.DrawingManager({
-            drawingMode: google.maps.drawing.OverlayType.MARKER,
             drawingControl: true,
             drawingControlOptions: {
                 position: google.maps.ControlPosition.TOP_CENTER,
@@ -99,10 +98,6 @@
         const searchBox = new google.maps.places.SearchBox(input)
     
         map.controls[google.maps.ControlPosition.TOP_LEFT].push(input)
-
-        map.addListener("bounds_changed", () => {
-            searchBox.setBounds(map.getBounds())
-        });
 
         searchBox.addListener("places_changed", () => {
             const places = searchBox.getPlaces()
@@ -131,17 +126,17 @@
                     anchor: new google.maps.Point(17, 34),
                     scaledSize: new google.maps.Size(25, 25),
                 }
-        
+                console.log('here')
                 markers.push(new google.maps.Marker({map, icon, title: place.name, position: place.geometry.location}))
         
                 if (place.geometry.viewport) {
-                    bounds.union(place.geometry.viewport);
+                    bounds.union(place.geometry.viewport)
                 } else {
-                    bounds.extend(place.geometry.location);
+                    bounds.extend(place.geometry.location)
                 }
             })
-            map.fitBounds(bounds);
-        });
+            map.fitBounds(bounds)
+        })
 
         google.maps.event.addListener(drawingManager, 'overlaycomplete', event => {
             if (event.type !== google.maps.drawing.OverlayType.MARKER) {
